@@ -1,3 +1,6 @@
+import sys
+from unittest.mock import Mock
+
 import numpy as np
 import pytest
 
@@ -71,3 +74,16 @@ def test_spss_usecols(datapath):
 
     with pytest.raises(TypeError, match="usecols must be list-like."):
         pd.read_spss(fname, usecols="VAR00002")
+
+
+@pytest.mark.parametrize("encoding", [None, "utf-8", "iso-8859-1"])
+def test_uses_provided_encoding(monkeypatch, encoding):
+    read_sav_mock = Mock(return_value=(pd.DataFrame(), {}))
+    monkeypatch.setattr(pyreadstat, "read_sav", read_sav_mock)
+
+    path = "/any/path/will/do.sav"
+    pd.read_spss(path, encoding=encoding)
+
+    _, read_sav_call_kwargs = read_sav_mock.call_args
+    assert "encoding" in read_sav_call_kwargs
+    assert read_sav_call_kwargs["encoding"] == encoding
